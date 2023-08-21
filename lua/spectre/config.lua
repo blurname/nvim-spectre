@@ -105,6 +105,16 @@ local config = {
             cmd = "<cmd>lua require('spectre').resume_last_search()<CR>",
             desc = "repeat last search"
         },
+        ['undo_search'] = {
+            map = "u",
+            cmd = "<cmd>lua require('spectre').undo()<CR>",
+            desc = "undo search, replace or path"
+        },
+        ['redo_search'] = {
+            map = "<c-r>",
+            cmd = "<cmd>lua require('spectre').redo()<CR>",
+            desc = "redo search, replace or path"
+        },
     },
     find_engine        = {
         ['rg'] = {
