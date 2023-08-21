@@ -105,6 +105,7 @@ local config = {
             cmd = "<cmd>lua require('spectre').resume_last_search()<CR>",
             desc = "repeat last search"
         },
+<<<<<<< HEAD
         ['jump_to_search'] = {
             map = "<F1>",
             cmd = "<cmd>lua require('spectre').search({type:'search'})<CR>",
@@ -120,6 +121,19 @@ local config = {
             cmd = "<cmd>lua require('spectre').search({type:'path'})<CR>",
             desc = "jump to path line and exec callback"
         },
+||||||| parent of 9c02e12 (FEAT: history)
+=======
+        ['undo_search'] = {
+            map = "u",
+            cmd = "<cmd>lua require('spectre').undo()<CR>",
+            desc = "undo search, replace or path"
+        },
+        ['redo_search'] = {
+            map = "<c-r>",
+            cmd = "<cmd>lua require('spectre').redo()<CR>",
+            desc = "redo search, replace or path"
+        },
+>>>>>>> 9c02e12 (FEAT: history)
     },
     find_engine        = {
         ['rg'] = {

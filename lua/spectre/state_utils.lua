@@ -79,4 +79,6 @@ M.status_line = function(opt)
     }
     return spectre
 end
+
+
 return M

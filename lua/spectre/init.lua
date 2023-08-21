@@ -27,6 +27,7 @@ local utils = require('spectre.utils')
 local ui = require('spectre.ui')
 local log = require('spectre._log')
 local highlight = require('spectre.highlight')
+local history = require('spectre.history')
 local async = require('plenary.async')
 
 local scheduler = async.util.scheduler
@@ -160,6 +161,11 @@ M.open = function(opts)
             path = opts.path,
         })
     end
+    history.write_history({
+        search_query = opts.search_text,
+        replace_query = opts.replace_text,
+        path = opts.path,
+    })
 end
 
 M.toggle = function(opts)
@@ -188,7 +194,7 @@ function M.mapping_buffer(bufnr)
     api.nvim_buf_set_keymap(bufnr, 'v', 'd', '<esc><cmd>lua require("spectre").toggle_checked()<cr>', map_opt)
     api.nvim_buf_set_keymap(bufnr, 'n', 'o', 'ji', map_opt) -- don't append line on can make the UI wrong
     api.nvim_buf_set_keymap(bufnr, 'n', 'O', 'ki', map_opt)
-    api.nvim_buf_set_keymap(bufnr, 'n', 'u', "", map_opt) -- disable undo, It breaks the UI.
+    -- api.nvim_buf_set_keymap(bufnr, 'n', 'u', "", map_opt) -- disable undo, It breaks the UI.
     api.nvim_buf_set_keymap(bufnr, 'i', '<CR>', "", map_opt) -- disable ENTER on insert mode, it breaks the UI.
     api.nvim_buf_set_keymap(bufnr, 'n', '<Tab>', "<cmd>lua require('spectre').tab()<cr>", map_opt)
     api.nvim_buf_set_keymap(bufnr, 'n', '<S-Tab>', "<cmd>lua require('spectre').tab_shift()<cr>", map_opt)
@@ -196,6 +202,8 @@ function M.mapping_buffer(bufnr)
     api.nvim_buf_set_keymap(bufnr, 'n', '<F2>', "<cmd>lua require('spectre').jump({type='replace'})<cr>", map_opt)
     api.nvim_buf_set_keymap(bufnr, 'n', '<F3>', "<cmd>lua require('spectre').jump({type='path'})<cr>", map_opt)
     api.nvim_buf_set_keymap(bufnr, 'n', '?', "<cmd>lua require('spectre').show_help()<cr>", map_opt)
+    api.nvim_buf_set_keymap(bufnr, 'n', 'u', "<cmd>lua require('spectre').undo()<cr>", map_opt)
+    api.nvim_buf_set_keymap(bufnr, 'n', '<c-r>', "<cmd>lua require('spectre').redo()<cr>", map_opt)
 
     for _, map in pairs(state.user_config.mapping) do
         api.nvim_buf_set_keymap(bufnr, 'n', map.map, map.cmd, vim.tbl_deep_extend("force", map_opt, { desc = map.desc }))
@@ -321,6 +329,7 @@ M.on_search_change = function()
     else
         M.search(query)
     end
+        history.write_history(query)
 end
 
 M.on_write = function()
@@ -621,6 +630,7 @@ M.search = function(opts)
     if not opts.search_query or #opts.search_query < 2 then
         return
     end
+
     state.query = opts
     -- clear old search result
     api.nvim_buf_clear_namespace(state.bufnr, config.namespace_result, 0, -1)
@@ -739,6 +749,78 @@ M.jump = function(opts)
     print(state.user_config.jump_callback)
     local callback = state.user_config.jump_callback[type]
     if callback ~= nil then callback() end
+end
+
+
+
+M.undo_redo_rerender = function (params)
+    local type = params.type
+    local next_query_param = state.history[type].stack[state.history[type].index]
+    local line = vim.fn.getpos('.')[2]
+    if type == 'search' then
+        state.query.search_query = next_query_param or state.query.search_query
+    elseif type == 'replace' then
+        state.query.replace_query = next_query_param or state.query.replace_query
+    elseif type == 'path' then
+        state.query.path = next_query_param or state.query.path
+    end
+    ui.render_text_query({
+        replace_text = state.query.replace_query,
+        search_text = state.query.search_query,
+        path = state.query.path,
+        begin_line_num = line
+    })
+    ui.render_search_ui()
+    M.search(state.query)
+end
+
+M.history_resolve = function (params)
+    local history_type = params.history_type
+    local type_from_props= params.type_from_props
+
+    local type
+    if type_from_props ~= nil then
+        type = type_from_props
+    else
+        local line = vim.fn.getpos('.')[2]
+        if line == 2 or line == 3 then
+            type = 'search'
+        elseif line == 4 or line == 5 then
+            type = 'replace'
+        elseif line == 6 or line == 7 then
+            type = 'path'
+        end
+    end
+
+    if state.history[type] == nil then
+        return
+    end
+
+    local canRerender = false
+
+    if history_type == 'undo' then
+        if state.history[type].index > 1  then
+            state.history[type].index = state.history[type].index-1
+            canRerender = true
+        end
+    elseif history_type == 'redo' then
+        if state.history[type].index < #state.history[type].stack then
+            state.history[type].index = state.history[type].index+1
+            canRerender = true
+        end
+    end
+
+    if canRerender then
+        M.undo_redo_rerender({type=type})
+    end
+end
+
+M.undo = function (type_from_props)
+    M.history_resolve({history_type='undo',type_from_props})
+end
+
+M.redo = function(type_from_props)
+    M.history_resolve({history_type='redo',type_from_props})
 end
 
 return M

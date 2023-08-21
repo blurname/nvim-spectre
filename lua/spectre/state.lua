@@ -27,7 +27,21 @@ local state = {
     cwd = nil,
     target_winid = nil,
     total_item = {},
-    opened = false
+    opened = false,
+    history = {
+        search = {
+            stack={},
+            index=0
+        },
+        replace = {
+            stack={},
+            index=0
+        },
+        path = {
+            stack={},
+            index=0
+        }
+    }
 }
 
 if _G.__is_dev then

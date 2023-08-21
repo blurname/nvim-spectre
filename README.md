@@ -183,6 +183,16 @@ require('spectre').setup({
         cmd = "<cmd>lua require('spectre').search({type:'path'})<CR>",
         desc = "jump to path line and exec callback"
     },
+    ['undo_search'] = {
+      map = "u",
+      cmd = "<cmd>lua require('spectre').undo()<CR>",
+      desc = "undo search, replace or path"
+    },
+    ['redo_search'] = {
+      map = "<c-r>",
+      cmd = "<cmd>lua require('spectre').redo()<CR>",
+      desc = "redo search, replace or path"
+    },
     -- you can put your mapping here it only use normal mode
   },
   find_engine = {
