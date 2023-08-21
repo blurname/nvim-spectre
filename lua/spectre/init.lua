@@ -192,6 +192,7 @@ function M.mapping_buffer(bufnr)
     api.nvim_buf_set_keymap(bufnr, 'i', '<CR>', "", map_opt) -- disable ENTER on insert mode, it breaks the UI.
     api.nvim_buf_set_keymap(bufnr, 'n', '<Tab>', "<cmd>lua require('spectre').tab()<cr>", map_opt)
     api.nvim_buf_set_keymap(bufnr, 'n', '<S-Tab>', "<cmd>lua require('spectre').tab_shift()<cr>", map_opt)
+    api.nvim_buf_set_keymap(bufnr, 'n', '<F2>', "<cmd>lua require('spectre').jump_to_search()<cr>", map_opt)
     api.nvim_buf_set_keymap(bufnr, 'n', '?', "<cmd>lua require('spectre').show_help()<cr>", map_opt)
 
     for _, map in pairs(state.user_config.mapping) do
@@ -722,6 +723,11 @@ M.tab_shift = function()
     if line == 5 then vim.api.nvim_win_set_cursor(vim.api.nvim_get_current_win(), {3, 1}) end
     if line == 7 then vim.api.nvim_win_set_cursor(vim.api.nvim_get_current_win(), {5, 1})
     end
+end
+
+M.jump_to_search = function()
+    vim.api.nvim_win_set_cursor(vim.api.nvim_get_current_win(), {3, 1})
+    vim.api.nvim_feedkeys('cc', 'n', true)
 end
 
 return M
